@@ -1,0 +1,19 @@
+{
+  "name": "fenestrator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI-assisted interpretive translation and modernization system",
+  "workspaces": [
+    "apps/desktop-ui",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/desktop-ui",
+    "build": "npm run build --workspace=apps/desktop-ui",
+    "build:packages": "npm run build --workspace=packages/schemas --workspace=packages/core-domain"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
