@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { AppModeStore } from '../../core/config/app-mode.store';
 import { NavStore } from '../../core/nav/nav.store';
 import { ProfileStore } from '../../core/profile/profile.store';
 import { ProjectStore } from '../../core/project/project.store';
@@ -14,6 +15,11 @@ import { RuntimeStore } from '../../core/runtime/runtime.store';
       <div class="context">
         <div class="context-chip">
           <strong>fenestrator</strong>
+          @if (appMode.mode() === 'web') {
+            <span class="pill pill-muted">web demo</span>
+          } @else {
+            <span class="pill pill-green">desktop</span>
+          }
         </div>
         @if (project.isLoaded()) {
           <div class="context-chip">
@@ -63,7 +69,7 @@ import { RuntimeStore } from '../../core/runtime/runtime.store';
         <button
           class="btn btn-primary"
           id="topbar-run-btn"
-          [disabled]="!runtime.canRun()"
+          [disabled]="appMode.mode() === 'web' || !runtime.canRun()"
           (click)="onRun()"
         >
           ▶ Run Translation
@@ -143,6 +149,7 @@ import { RuntimeStore } from '../../core/runtime/runtime.store';
   `],
 })
 export class TopbarComponent {
+  protected readonly appMode = inject(AppModeStore);
   protected readonly nav = inject(NavStore);
   protected readonly project = inject(ProjectStore);
   protected readonly git = inject(GitStore);

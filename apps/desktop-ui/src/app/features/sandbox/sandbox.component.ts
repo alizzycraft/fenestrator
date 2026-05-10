@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { AppModeStore } from '../../core/config/app-mode.store';
 import { FormsModule } from '@angular/forms';
 import { NgClass, TitleCasePipe } from '@angular/common';
 import { NavStore } from '../../core/nav/nav.store';
@@ -65,7 +66,8 @@ import { ProfileStore } from '../../core/profile/profile.store';
             <button
               class="btn btn-primary"
               id="sandbox-run-btn"
-              [disabled]="!runtime.canRun()"
+              [disabled]="appMode.mode() === 'web' || !runtime.canRun()"
+              [title]="appMode.mode() === 'web' ? 'Translation requires Desktop Mode' : ''"
               (click)="onRun()"
             >▶ Run</button>
           </div>
@@ -529,6 +531,7 @@ import { ProfileStore } from '../../core/profile/profile.store';
   `],
 })
 export class SandboxComponent {
+  protected readonly appMode = inject(AppModeStore);
   protected readonly nav = inject(NavStore);
   protected readonly segments = inject(SegmentStore);
   protected readonly runtime = inject(RuntimeStore);
@@ -594,7 +597,7 @@ export class SandboxComponent {
     const text = this.segments.activeText();
     const profileId = this.profile.activeProfileId() ?? 'stirner-modernist';
     if (!text.trim()) return;
-    await this.runtime.runStubTranslation(text, profileId);
+    await this.runtime.runTranslation(text, profileId);
     // Push memory suggestions into MemoryStore
     const suggestions = this.runtime.memorySuggestions();
     if (suggestions.length > 0) {

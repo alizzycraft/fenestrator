@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { AppModeStore } from '../../core/config/app-mode.store';
 
 @Component({
   selector: 'app-settings',
@@ -6,6 +7,32 @@ import { Component } from '@angular/core';
   template: `
     <div class="settings-workspace">
       <h1 class="screen-title">Settings</h1>
+      
+      <div class="card">
+        <div class="card-head">Application Mode</div>
+        <div class="card-body">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Current Mode</div>
+              <div class="setting-desc">Determines capabilities like Git and AI translation</div>
+            </div>
+            @if (appMode.mode() === 'desktop') {
+              <span class="pill pill-green">desktop (full access)</span>
+            } @else {
+              <span class="pill pill-muted">web (read-only)</span>
+            }
+          </div>
+          <p class="setting-note">
+            @if (appMode.mode() === 'desktop') {
+              Running in <strong>Desktop Mode</strong>. Connected to local API. AI providers and native Git operations are available.
+            } @else {
+              Running in <strong>Web Mode</strong>. The app is completely serverless. Translation runs and Git commits are disabled. 
+              To get full functionality, clone the repo locally and run the desktop app.
+            }
+          </p>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">Runtime Configuration</div>
         <div class="card-body">
@@ -14,39 +41,23 @@ import { Component } from '@angular/core';
               <div class="setting-label">Runtime Mode</div>
               <div class="setting-desc">How translation requests are executed</div>
             </div>
-            <span class="pill pill-muted">stub (Phase 1)</span>
-          </div>
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">Streaming</div>
-              <div class="setting-desc">Stream partial output during translation</div>
-            </div>
-            <span class="pill pill-muted">not available</span>
+            @if (appMode.mode() === 'desktop') {
+              <span class="pill pill-green">local api</span>
+            } @else {
+              <span class="pill pill-muted">stub (Phase 1)</span>
+            }
           </div>
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">Provider</div>
               <div class="setting-desc">AI model provider for translation runs</div>
             </div>
-            <span class="pill pill-muted">not configured</span>
+            @if (appMode.mode() === 'desktop') {
+              <span class="pill pill-green">anthropic (local .env)</span>
+            } @else {
+              <span class="pill pill-muted">not available</span>
+            }
           </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head">Identity & Authentication</div>
-        <div class="card-body">
-          <div class="setting-row">
-            <div class="setting-info">
-              <div class="setting-label">GitHub OAuth</div>
-              <div class="setting-desc">Authenticate to match your email against project authors for edit permissions</div>
-            </div>
-            <button class="btn btn-secondary" disabled>Coming in Phase 2</button>
-          </div>
-          <p class="setting-note">
-            When authenticated, your verified email is matched against the <code>authors[]</code> field in
-            <code>fenestrator.project.json</code>. If it matches, you get full edit permissions.
-            This makes the app work as a static-hosted site — clone your repo on any machine, authenticate, and resume editing.
-          </p>
         </div>
       </div>
     </div>
@@ -67,4 +78,6 @@ import { Component } from '@angular/core';
     .btn-secondary { background: var(--surface-2); color: var(--subtle); border: 1px solid var(--border); cursor: not-allowed; }
   `],
 })
-export class SettingsComponent {}
+export class SettingsComponent {
+  protected readonly appMode = inject(AppModeStore);
+}

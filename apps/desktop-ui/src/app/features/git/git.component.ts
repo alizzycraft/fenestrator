@@ -1,9 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { AppModeStore } from '../../core/config/app-mode.store';
 import { GitStore } from '../../core/git/git.store';
 
 @Component({
   selector: 'app-git',
   standalone: true,
+  imports: [FormsModule],
   template: `
     <div class="git-workspace">
       <div class="git-toolbar">
@@ -40,6 +43,12 @@ import { GitStore } from '../../core/git/git.store';
         <code>profile: refine Stirner terminology</code> or
         <code>memory: accept Eigenheit decisions</code>
       </div>
+      @if (appMode.mode() === 'desktop') {
+        <div class="commit-box">
+          <input class="commit-input" placeholder="Enter commit message…" [ngModel]="commitMessage()" (ngModelChange)="commitMessage.set($event)" (keyup.enter)="onCommit()" />
+          <button class="btn btn-primary" [disabled]="!git.isDirty() || !commitMessage()" (click)="onCommit()">Commit</button>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -54,8 +63,26 @@ import { GitStore } from '../../core/git/git.store';
     .empty-cell { color: var(--subtle); text-align: center; padding: 24px; font-size: 13px; }
     .commit-hint { padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--subtle); }
     .commit-hint code { background: var(--surface-2); padding: 2px 8px; border-radius: 5px; color: var(--muted); margin: 0 4px; }
+    .commit-box { display: flex; gap: 10px; margin-top: auto; }
+    .commit-input { flex: 1; height: 36px; padding: 0 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--fg); font-size: 13px; }
+    .commit-input:focus { border-color: var(--accent); outline: none; }
+    .btn { height: 36px; padding: 0 18px; border-radius: var(--radius-pill); font-weight: 600; font-size: 13px; }
+    .btn-primary { background: var(--accent); color: oklch(15% 0 0); box-shadow: 0 3px 10px color-mix(in oklch, var(--accent) 25%, transparent); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   `],
 })
 export class GitComponent {
+  protected readonly appMode = inject(AppModeStore);
   protected readonly git = inject(GitStore);
+  protected readonly commitMessage = signal('');
+
+  constructor() {
+    this.git.refreshStatus();
+  }
+
+  async onCommit() {
+    if (!this.commitMessage()) return;
+    await this.git.commitChanges(this.commitMessage());
+    this.commitMessage.set('');
+  }
 }

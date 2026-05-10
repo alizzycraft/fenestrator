@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AppModeStore } from '../../core/config/app-mode.store';
 import { ProfileStore } from '../../core/profile/profile.store';
 
 @Component({
@@ -18,7 +19,7 @@ import { ProfileStore } from '../../core/profile/profile.store';
             (ngModelChange)="searchQuery.set($event)"
             aria-label="Search terminology"
           />
-          <button class="btn btn-primary" id="add-term-btn" (click)="addTerm()">+ Add Term</button>
+          <button class="btn btn-primary" id="add-term-btn" [disabled]="appMode.mode() === 'web'" (click)="addTerm()">+ Add Term</button>
         </div>
       </div>
 
@@ -77,6 +78,7 @@ import { ProfileStore } from '../../core/profile/profile.store';
               <label>Preferred Translation</label>
               <input
                 class="field-input"
+                [disabled]="appMode.mode() === 'web'"
                 [ngModel]="selectedEntry()!.preferred"
                 (ngModelChange)="profile.terminologyEntryUpdated(selectedTerm()!, 'preferred', $event)"
               />
@@ -85,6 +87,7 @@ import { ProfileStore } from '../../core/profile/profile.store';
               <label>Notes</label>
               <textarea
                 class="field-textarea"
+                [disabled]="appMode.mode() === 'web'"
                 [ngModel]="selectedEntry()!.notes ?? ''"
                 (ngModelChange)="profile.terminologyEntryUpdated(selectedTerm()!, 'notes', $event)"
               ></textarea>
@@ -147,6 +150,7 @@ import { ProfileStore } from '../../core/profile/profile.store';
   `],
 })
 export class TerminologyEditorComponent {
+  protected readonly appMode = inject(AppModeStore);
   protected readonly profile = inject(ProfileStore);
   protected readonly searchQuery = signal('');
   protected readonly selectedTerm = signal<string | null>(null);

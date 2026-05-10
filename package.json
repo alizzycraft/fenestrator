@@ -4,11 +4,13 @@
   "version": "0.1.0",
   "description": "AI-assisted interpretive translation and modernization system",
   "workspaces": [
-    "apps/desktop-ui",
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/desktop-ui",
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:ui": "npm run dev --workspace=apps/desktop-ui",
+    "dev:api": "npm run dev --workspace=apps/local-api",
     "build": "npm run build --workspace=apps/desktop-ui",
     "build:packages": "npm run build --workspace=packages/schemas --workspace=packages/core-domain"
   },

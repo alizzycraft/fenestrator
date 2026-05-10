@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AppModeStore } from '../../core/config/app-mode.store';
 import { MemoryStore } from '../../core/memory/memory.store';
 
 @Component({
@@ -31,8 +32,12 @@ import { MemoryStore } from '../../core/memory/memory.store';
                   <td><span class="pill pill-yellow">suggested</span></td>
                   <td><span class="pill pill-muted">{{ s.origin }}</span></td>
                   <td>
-                    <button class="action-btn-sm accept" (click)="memory.memorySuggestionAccepted(s.id)">✓</button>
-                    <button class="action-btn-sm reject" (click)="memory.memorySuggestionRejected(s.id)">✕</button>
+                    @if (appMode.mode() === 'desktop') {
+                      <button class="action-btn-sm accept" (click)="memory.memorySuggestionAccepted(s.id)">✓</button>
+                      <button class="action-btn-sm reject" (click)="memory.memorySuggestionRejected(s.id)">✕</button>
+                    } @else {
+                      <span class="pill pill-muted" title="Action requires Desktop Mode">disabled</span>
+                    }
                   </td>
                 </tr>
               }
@@ -69,6 +74,7 @@ import { MemoryStore } from '../../core/memory/memory.store';
   `],
 })
 export class MemoryComponent {
+  protected readonly appMode = inject(AppModeStore);
   protected readonly memory = inject(MemoryStore);
   protected statusPill(status: string): string {
     const map: Record<string, string> = { accepted: 'pill-green', suggested: 'pill-yellow', rejected: 'pill-red', superseded: 'pill-muted' };

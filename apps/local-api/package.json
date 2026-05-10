@@ -1,0 +1,20 @@
+{
+  "name": "@fenestrator/local-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node src/server.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.95.1",
+    "@fastify/cors": "^9.0.1",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.26.2",
+    "simple-git": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

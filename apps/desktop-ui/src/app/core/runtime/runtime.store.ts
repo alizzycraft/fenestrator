@@ -1,4 +1,4 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import type {
   TranslationRequest,
   TranslationResponse,
@@ -25,8 +25,12 @@ interface RuntimeState {
   lastRunDurationMs: number | null;
 }
 
+import { AppModeStore } from '../config/app-mode.store';
+
 @Injectable({ providedIn: 'root' })
 export class RuntimeStore {
+  private readonly appMode = inject(AppModeStore);
+
   private readonly _state = signal<RuntimeState>({
     status: 'idle',
     activeRunId: null,
@@ -116,8 +120,8 @@ export class RuntimeStore {
     this._state.update((s) => ({ ...s, selectedVariant: variant }));
   }
 
-  // EFFECT: Stub translator — simulates an AI translation response
-  async runStubTranslation(sourceText: string, profileId: string): Promise<void> {
+  // EFFECT: Translate
+  async runTranslation(sourceText: string, profileId: string): Promise<void> {
     const request: TranslationRequest = {
       contractVersion: 1,
       projectRoot: '',
@@ -129,6 +133,24 @@ export class RuntimeStore {
 
     this.translationRequested(request);
 
+    if (this.appMode.mode() === 'desktop') {
+      try {
+        const res = await fetch('http://127.0.0.1:3000/api/runtime/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request }),
+        });
+        if (!res.ok) throw new Error('Translation API failed');
+        const response: TranslationResponse = await res.json();
+        this.translationCompleted(response);
+      } catch (e: any) {
+        console.error(e);
+        this.translationFailed(e.message);
+      }
+      return;
+    }
+
+    // WEB MODE STUB
     // Simulate async delay
     await new Promise((r) => setTimeout(r, 800 + Math.random() * 1200));
 
@@ -144,14 +166,14 @@ export class RuntimeStore {
           kind: 'modernized',
           text: hasEigenheit
             ? 'Ownness, in a word, is the property of the one who is their own. No one can take it from me without treating what is mine as theirs.'
-            : `[Modernized] ${sourceText}`,
+            : `[Web Demo] ${sourceText}`,
           score: null,
         },
         {
           kind: 'literal',
           text: hasEigenheit
             ? 'Peculiarity is in a word the property of the owner, and no one can take it from me without thereby appropriating my property.'
-            : `[Literal] ${sourceText}`,
+            : `[Web Demo Literal] ${sourceText}`,
           score: null,
         },
       ],
