@@ -1,9 +1,13 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AppModeStore } from '../../core/config/app-mode.store';
+import { ProviderStore } from '../../core/config/provider.store';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="settings-workspace">
       <h1 class="screen-title">Settings</h1>
@@ -33,31 +37,55 @@ import { AppModeStore } from '../../core/config/app-mode.store';
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" *ngIf="appMode.mode() === 'desktop'">
         <div class="card-head">Runtime Configuration</div>
         <div class="card-body">
           <div class="setting-row">
             <div class="setting-info">
-              <div class="setting-label">Runtime Mode</div>
-              <div class="setting-desc">How translation requests are executed</div>
+              <div class="setting-label">Active Provider</div>
+              <div class="setting-desc">Select which AI provider to use for translations</div>
             </div>
-            @if (appMode.mode() === 'desktop') {
-              <span class="pill pill-green">local api</span>
-            } @else {
-              <span class="pill pill-muted">stub (Phase 1)</span>
-            }
+            <div class="setting-control">
+              <select class="field-select" [(ngModel)]="selectedProviderId">
+                @for (p of providerStore.providers(); track p.id) {
+                  <option [value]="p.id" [disabled]="!p.isAvailable">
+                    {{ p.name }} {{ p.isAvailable ? '' : '(Not Installed)' }}
+                  </option>
+                }
+              </select>
+            </div>
           </div>
+
           <div class="setting-row">
             <div class="setting-info">
-              <div class="setting-label">Provider</div>
-              <div class="setting-desc">AI model provider for translation runs</div>
+              <div class="setting-label">Anthropic API Key</div>
+              <div class="setting-desc">Required if using Anthropic API (Online). Stored in local .env</div>
             </div>
-            @if (appMode.mode() === 'desktop') {
-              <span class="pill pill-green">anthropic (local .env)</span>
-            } @else {
-              <span class="pill pill-muted">not available</span>
-            }
+            <div class="setting-control">
+              <input 
+                type="password" 
+                class="field-input" 
+                placeholder="sk-ant-..." 
+                [(ngModel)]="anthropicKey" 
+              />
+            </div>
           </div>
+          
+          <div class="setting-row" style="background: var(--surface-2); justify-content: flex-end;">
+            <button 
+              class="btn btn-primary" 
+              (click)="saveConfig()" 
+              [disabled]="providerStore.status() === 'saving'"
+            >
+              {{ providerStore.status() === 'saving' ? 'Saving...' : 'Save Configuration' }}
+            </button>
+          </div>
+          
+          @if (providerStore.error()) {
+            <p class="setting-note error-text">
+              Error saving: {{ providerStore.error() }}
+            </p>
+          }
         </div>
       </div>
     </div>
@@ -68,16 +96,46 @@ import { AppModeStore } from '../../core/config/app-mode.store';
     .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); border-top: 2px solid var(--accent); overflow: hidden; }
     .card-head { padding: 14px 16px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; }
     .card-body { padding: 0; }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 16px; }
     .setting-row:last-of-type { border-bottom: none; }
+    .setting-info { flex: 1; }
+    .setting-control { flex-shrink: 0; }
     .setting-label { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
     .setting-desc { font-size: 12px; color: var(--subtle); }
     .setting-note { padding: 12px 16px 14px; font-size: 12px; color: var(--subtle); line-height: 1.6; border-top: 1px solid var(--border); }
+    .error-text { color: var(--red); }
     .setting-note code { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--muted); }
-    .btn { height: 32px; padding: 0 14px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; }
-    .btn-secondary { background: var(--surface-2); color: var(--subtle); border: 1px solid var(--border); cursor: not-allowed; }
+    .btn { height: 32px; padding: 0 16px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-primary { background: var(--accent); color: oklch(15% 0 0); box-shadow: 0 3px 10px color-mix(in oklch, var(--accent) 25%, transparent); }
+    .btn-primary:hover:not(:disabled) { filter: brightness(1.05); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .field-select, .field-input {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--fg); padding: 6px 10px;
+      font-size: 13px; width: 220px; transition: border-color 0.15s;
+    }
+    .field-select:focus, .field-input:focus { border-color: var(--accent); outline: none; }
   `],
 })
 export class SettingsComponent {
   protected readonly appMode = inject(AppModeStore);
+  protected readonly providerStore = inject(ProviderStore);
+
+  protected selectedProviderId = 'anthropic-api';
+  protected anthropicKey = '';
+
+  constructor() {
+    if (this.appMode.mode() === 'desktop') {
+      this.providerStore.loadProviders().then(() => {
+        this.selectedProviderId = this.providerStore.activeProviderId();
+        this.anthropicKey = this.providerStore.hasAnthropicKey() ? '********' : '';
+      });
+    }
+  }
+
+  async saveConfig() {
+    // Don't send mask if it wasn't changed
+    const keyToSend = this.anthropicKey === '********' ? undefined : this.anthropicKey;
+    await this.providerStore.saveConfiguration(this.selectedProviderId, keyToSend);
+  }
 }
